@@ -26,10 +26,12 @@ export default class DrinkTable extends Vue {
   @Prop() private drinks: Array<Drink> = [];
 
   async mounted() {
+    const promises: Array<Promise<Drink>> = [];
     for (let i = 0; i < this.limit; i++) {
-      const drink: Drink = await this.apiService.getDrink();
-      this.drinks.push(drink);
+      const drink: Promise<Drink> = this.apiService.getDrink();
+      promises.push(drink);
     }
+    this.drinks = await Promise.all(promises);
   }
 }
 </script>
