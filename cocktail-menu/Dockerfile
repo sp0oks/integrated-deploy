@@ -9,4 +9,6 @@ RUN cd /tmp && \
 WORKDIR /app
 COPY . .
 
+EXPOSE 8080
+
 CMD ["npm", "run", "serve"]
