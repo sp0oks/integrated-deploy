@@ -1,10 +1,14 @@
+// Importing frameworks
 import Vue from "vue";
 import App from "./App.vue";
 import router from "./router";
 
+// Importing bootstrap
 import { BootstrapVue, CardPlugin, BCard, BCardGroup } from "bootstrap-vue";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue/dist/bootstrap-vue.css";
+
+// Using components
 Vue.use(BootstrapVue);
 Vue.use(CardPlugin);
 Vue.component("b-card", BCard);
