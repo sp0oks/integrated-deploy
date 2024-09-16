@@ -1,14 +1,15 @@
-FROM node:alpine
+FROM python:alpine
 
-ADD package.json /tmp/package.json
-RUN cd /tmp && \
-    npm install && \
-    mkdir -p /app && \
-    mv /tmp/node_modules /app
+RUN pip install uv
 
 WORKDIR /app
+
+COPY requirements.txt .
+
+RUN uv pip install -r requirements.txt
+
 COPY . .
 
-EXPOSE 3000
+EXPOSE 8000
 
-CMD ["npm", "run", "start"]
+CMD ["uvx", "fastapi", "run", "main.py"]
