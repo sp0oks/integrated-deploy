@@ -1,9 +1,8 @@
 <template>
   <div>
-    <h1 class="title">{{ title }}</h1>
     <b-card-group deck id="card-table">
       <div v-for="drink in drinks" :key="drink.id">
-        <DrinkCard :drink=" drink" />
+        <DrinkCard :drink="drink" />
       </div>
     </b-card-group>
   </div>
@@ -38,12 +37,17 @@ export default class DrinkTable extends Vue {
 
 <style scoped>
 #card-table {
-  padding: 5%;
   display: flex;
+  padding-bottom: 5%;
+  padding-top: 5%;
   margin-left: auto;
   margin-right: auto;
+  margin-top: auto;
+  margin-bottom: auto;
 }
-.title {
-  color: #42b983;
+
+.card-deck {
+  display: flex;
+  justify-content: center;
 }
 </style>
