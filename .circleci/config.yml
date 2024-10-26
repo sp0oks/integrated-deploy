@@ -5,13 +5,50 @@ jobs:
   greetings:
     docker:
       - image: cimg/base:stable
+      # O executor default de docker é o large, com 4 vCPUs e 8GB RAM
+      # Podemos mudar o executor com o comando a seguir e um dos valores possíveis:
+      # lista de resource classes: https://circleci.com/docs/using-docker/#available-docker-resource-classes
+      # - resource_class: <class>
     steps:
       - checkout
       - run:
-          command: echo "Bem vindo ao CircleCI!"
+          command: echo "Build do projeto iniciada às $(date +%r)"
+
+  build-backend:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run:
+          name: Build da imagem da API
+          command: |
+            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+
+  build-frontend:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run:
+          name: Build da imagem do site
+          command: |
+            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
 
 # Workflows: orquestram a ordem dos jobs
 workflows:
-  hello-world:
+  build:
     jobs:
-      - greetings
+      - greetings:
+          name: Notificação de começo da build
+      - build-backend:
+          name: Build do serviço de backend
+          requires:
+            - Notificação de começo da build
+      - build-frontend:
+          name: Build do serviço de frontend
+          requires:
+            - Notificação de começo da build
