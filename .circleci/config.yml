@@ -21,7 +21,8 @@ jobs:
     resource_class: medium
     steps:
       - setup_remote_docker:
-          docker_layer_caching: true
+          # a build sem caching está durando menos de um minuto, vamos deixar este aqui desativado
+          docker_layer_caching: false
       - checkout
       - run:
           name: Build da imagem da API
@@ -34,6 +35,7 @@ jobs:
     resource_class: medium
     steps:
       - setup_remote_docker:
+          # infelizmente um dos únicos jeitos de melhorar a performance do npm em CI é ativando caching
           docker_layer_caching: true
       - checkout
       - run:
