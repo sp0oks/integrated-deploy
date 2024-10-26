@@ -38,6 +38,14 @@ jobs:
           command: |
             docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
 
+  farewell:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          command: echo "Build do projeto terminada às $(date +%r)"
+
 # Workflows: orquestram a ordem dos jobs
 workflows:
   build:
@@ -52,3 +60,8 @@ workflows:
           name: Build do serviço de frontend
           requires:
             - Notificação de começo da build
+      - farewell:
+          name: Notificação de fim da build
+          requires:
+            - Build do serviço de backend
+            - Build do serviço de frontend
