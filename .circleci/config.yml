@@ -8,7 +8,8 @@ jobs:
       # O executor default de docker é o large, com 4 vCPUs e 8GB RAM
       # Podemos mudar o executor com o comando a seguir e um dos valores possíveis:
       # lista de resource classes: https://circleci.com/docs/using-docker/#available-docker-resource-classes
-      # - resource_class: <class>
+      # resource_class: <class>
+    resource_class: small
     steps:
       - checkout
       - run:
@@ -17,6 +18,7 @@ jobs:
   build-backend:
     docker:
       - image: cimg/base:stable
+    resource_class: medium
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
@@ -29,6 +31,7 @@ jobs:
   build-frontend:
     docker:
       - image: cimg/base:stable
+    resource_class: medium
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
@@ -41,6 +44,7 @@ jobs:
   farewell:
     docker:
       - image: cimg/base:stable
+    resource_class: small
     steps:
       - checkout
       - run:
