@@ -5,12 +5,12 @@ commands:
   instala_dependencias:
     steps:
       - run:
-          name: Instala requirementes com uv
+          name: Instala dependencias com uv
           command: |
             pip install uv
             uv venv
             source .venv/bin/activate
-            uv pip install -r requirements.txt
+            uv pip install -r cocktail-api/requirements.txt
 
 # Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
@@ -41,7 +41,7 @@ jobs:
           name: Testes unitários da API
           command: |
             source .venv/bin/activate
-            pytest --junitxml="/reports/pytest/junit.xml"
+            pytest --junitxml="/reports/pytest/junit.xml" --cov=src/ --cov-report=term-missing .
       - store_test_results:
           # salva os resultados dos testes unitários para análise no circleci
           path: /reports

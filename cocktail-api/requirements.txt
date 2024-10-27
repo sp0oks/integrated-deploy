@@ -3,3 +3,4 @@ aiohttp[speedups]
 loguru
 pytest
 pytest-cov
+pytest-asyncio
