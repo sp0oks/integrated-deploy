@@ -56,9 +56,9 @@ jobs:
           name: Build da imagem da API
           command: |
             docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
-      - discord/status:
-          fail_only: true
-          failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
+      # - discord/status:
+      #     fail_only: true
+      #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
 
   build-frontend:
     docker:
@@ -97,8 +97,8 @@ workflows:
           name: Teste e build do serviço de backend
           requires:
             - Notificação de começo da build
-          context:
-            - Discord
+          # context:
+          #   - Discord
       - build-frontend:
           name: Build do serviço de frontend
           requires:
