@@ -83,8 +83,7 @@ jobs:
           docker_layer_caching: false
       - heroku/install
       - heroku/push-docker-image:
-          recursive: true
-          process-types: "api site"
+          process-types: "--recursive api site"
       - heroku/release-docker-image:
           process-types: "api site"
 
