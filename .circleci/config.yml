@@ -108,13 +108,13 @@ workflows:
       - test-and-build-backend:
           name: Teste e build do serviço de backend
           requires:
-            - Notificação de começo da build
+            - Notificação de começo do workflow
           # context:
           #   - Discord
       - build-frontend:
           name: Build do serviço de frontend
           requires:
-            - Notificação de começo da build
+            - Notificação de começo do workflow
       - deploy-service:
           name: Deploy do serviço
           context:
