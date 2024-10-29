@@ -1,10 +1,14 @@
 services:
   backend:
-    build: ./cocktail-api
+    build:
+      context: ./cocktail-api/
+      dockerfile: Dockerfile.api
     ports:
       - "8000:8000"
 
   frontend:
-    build: ./cocktail-menu
+    build:
+      context: ./cocktail-menu/
+      dockerfile: Dockerfile.site
     ports:
       - "8080:8080"

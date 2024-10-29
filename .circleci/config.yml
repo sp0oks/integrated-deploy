@@ -2,6 +2,7 @@ version: 2.1
 
 # Orbs: importam comandos ou jobs definidos pela comunidade para executar no seu workflow
 orbs:
+  heroku: circleci/heroku@2.0.0
   discord: antonioned/discord@0.1.0
 
 # Commands: definem comandos de um ou mais steps que pode ser reutilizado em vários jobs
@@ -28,9 +29,9 @@ jobs:
     resource_class: small
     steps:
       - run:
-          command: echo "Build do projeto iniciada às $(date +%r)"
+          command: echo "Workflow do projeto iniciado às $(date +%r)"
       - discord/status:
-          success_message: "Workflow de #${CIRCLE_SHA1:0:7} iniciado..."
+          success_message: "Workflow do commit #${CIRCLE_SHA1:0:7} iniciado..."
 
   test-and-build-backend:
     docker:
@@ -74,22 +75,33 @@ jobs:
           command: |
             docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
 
+  deploy-service:
+    executor: heroku/default
+    steps:
+      - run:
+          name: Subir imagens para o Heroku Container Registry
+          command: |
+            heroku stack:set container
+            heroku container:login
+            heroku container:push --recursive api site
+            heroku container:release api site
+
   farewell:
     docker:
       - image: cimg/base:stable
     resource_class: small
     steps:
       - run:
-          command: echo "Build do projeto terminada às $(date +%r)"
+          command: echo "Workflow do projeto terminado às $(date +%r)"
       - discord/status:
-          success_message: ":tada: Workflow de #${CIRCLE_SHA1:0:7} terminado com sucesso!"
+          success_message: ":tada: Workflow do commit #${CIRCLE_SHA1:0:7} terminado com sucesso!"
 
 # Workflows: orquestram a ordem dos jobs
 workflows:
   build:
     jobs:
       - greetings:
-          name: Notificação de começo da build
+          name: Notificação de começo do workflow
           context:
             # contém a variável sensível necessária para enviar notificações em outro serviço
             - Discord
@@ -103,10 +115,16 @@ workflows:
           name: Build do serviço de frontend
           requires:
             - Notificação de começo da build
-      - farewell:
-          name: Notificação de fim da build
+      - deploy-service:
+          name: Deploy do serviço
           context:
-            - Discord
+            - Heroku
           requires:
             - Teste e build do serviço de backend
             - Build do serviço de frontend
+      - farewell:
+          name: Notificação de fim do workflow
+          context:
+            - Discord
+          requires:
+            - Deploy do serviço
