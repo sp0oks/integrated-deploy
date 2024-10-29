@@ -82,8 +82,18 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: false
       - heroku/install
-      - heroku/push-docker-image:
-          process-types: "--recursive api site"
+      - run:
+          name: Log in to Heroku Container Registry
+          command: |
+            heroku container:login
+      # comando bugado
+      # - heroku/push-docker-image:
+      #    recursive: true
+      #    process-types: "api site"
+      - run:
+          name: Push Docker image to Heroku
+          command: >
+            heroku container:push --recursive 'api site'
       - heroku/release-docker-image:
           process-types: "api site"
 
