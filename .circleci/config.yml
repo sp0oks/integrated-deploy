@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Build da imagem da API
           command: |
-            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} --file ./cocktail-api/Dockerfile.api ./cocktail-api/
       # - discord/status:
       #     fail_only: true
       #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
@@ -73,7 +73,7 @@ jobs:
       - run:
           name: Build da imagem do site
           command: |
-            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
+            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} --file ./cocktail-menu/Dockerfile.site ./cocktail-menu/
 
   deploy-service:
     executor: heroku/default
