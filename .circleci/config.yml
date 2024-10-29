@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Build da imagem da API
           command: |
-            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} --file ./cocktail-api/Dockerfile.api ./cocktail-api/
+            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} --file ./cocktail-api/Dockerfile.web ./cocktail-api/
       # - discord/status:
       #     fail_only: true
       #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
@@ -73,7 +73,7 @@ jobs:
       - run:
           name: Build da imagem do site
           command: |
-            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} --file ./cocktail-menu/Dockerfile.site ./cocktail-menu/
+            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} --file ./cocktail-menu/Dockerfile.web ./cocktail-menu/
 
   deploy-service:
     executor: heroku/default
@@ -85,17 +85,18 @@ jobs:
       - run:
           name: Log in to Heroku Container Registry
           command: |
+            heroku stack:set container -a $HEROKU_APP_NAME
             heroku container:login
       # comando bugado
       # - heroku/push-docker-image:
       #    recursive: true
-      #    process-types: "api site"
+      #    process-types: "web"
       - run:
           name: Push Docker image to Heroku
           command: >
-            heroku container:push --recursive 'api site'
+            heroku container:push -a $HEROKU_APP_NAME --recursive web
       - heroku/release-docker-image:
-          process-types: "api site"
+          process-types: "web"
 
   farewell:
     docker:
