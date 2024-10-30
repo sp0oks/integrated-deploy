@@ -1,0 +1,10 @@
+services:
+  backend:
+    image: ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-menu:${CIRCLE_SHA1:0:7}
+    ports:
+      - "8080:8080"

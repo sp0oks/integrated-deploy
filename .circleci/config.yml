@@ -102,6 +102,7 @@ jobs:
     machine:
       image: ubuntu-2404:2024.05.1
       docker_layer_caching: false
+      resource_class: medium
     steps:
       - checkout
       - login-ghcr
@@ -109,8 +110,10 @@ jobs:
           name: Preparar e enviar script de deploy
           command: |
             ./deploy/fill_variables.py ./deploy/deploy.sh
+            ./deploy/fill_variables.py ./deploy/compose.yml
             scp ./deploy/deploy.sh_filled $SSH_USER@$SSH_HOST:/tmp/deploy.sh
-            ssh ${SSH_USER}@${SSH_HOST} "chmod +x /tmp/deploy.sh && /tmp/deploy.sh"
+            scp ./deploy/compose.yml_filled $SSH_USER@$SSH_HOST:/tmp/compose.yml
+            ssh ${SSH_USER}@${SSH_HOST} "chmod +x /tmp/deploy.sh && /tmp/deploy.sh /tmp/compose.yml"
 
   farewell:
     docker:
