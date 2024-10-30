@@ -110,7 +110,7 @@ jobs:
           command: |
             ./deploy/fill_variables.py ./deploy/deploy.sh
             scp ./deploy/deploy.sh_filled $SSH_USER@$SSH_HOST:/tmp/deploy.sh
-            ssh ${SSH_USER}@${SSH_HOST} "/tmp/deploy.sh &"
+            ssh ${SSH_USER}@${SSH_HOST} "chmod +x /tmp/deploy.sh && /tmp/deploy.sh"
 
   farewell:
     docker:
@@ -124,7 +124,7 @@ jobs:
 
 # Workflows: orquestram a ordem dos jobs
 workflows:
-  build:
+  deploy:
     jobs:
       - greetings:
           name: Notificação de começo do workflow
