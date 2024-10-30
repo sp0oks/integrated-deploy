@@ -2,7 +2,6 @@ version: 2.1
 
 # Orbs: importam comandos ou jobs definidos pela comunidade para executar no seu workflow
 orbs:
-  heroku: circleci/heroku@2.0.0
   discord: antonioned/discord@0.1.0
 
 # Commands: definem comandos de um ou mais steps que pode ser reutilizado em vários jobs
@@ -16,6 +15,26 @@ commands:
             uv venv
             source .venv/bin/activate
             uv pip install -r cocktail-api/requirements.txt
+
+  login-ghcr:
+    description: "Faz o login no GHCR (github container registry) para executar comandos do docker que precisam de autenticação"
+    steps:
+      - run:
+          name: Loga no Github Container Registry
+          command: |
+            docker login --username ${CIRCLE_PROJECT_USERNAME} --password ${GITHUB_TOKEN} ghcr.io
+
+  push-image-ghcr:
+    description: "Executa um docker push de uma imagem para o GHCR para disponibilizar um package (outro nome para docker image) no repositório"
+    parameters:
+      image:
+        type: string
+    steps:
+      - login-ghcr
+      - run:
+          name: Sobe a imagem para o GHCR
+          command: |
+            docker push << parameters.image >>
 
 # Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
@@ -56,7 +75,9 @@ jobs:
       - run:
           name: Build da imagem da API
           command: |
-            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} --file ./cocktail-api/Dockerfile.web ./cocktail-api/
+            docker build --tag ghcr.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+      - push-image-ghcr:
+          image: ghcr.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7}
       # - discord/status:
       #     fail_only: true
       #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
@@ -73,30 +94,23 @@ jobs:
       - run:
           name: Build da imagem do site
           command: |
-            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} --file ./cocktail-menu/Dockerfile.web ./cocktail-menu/
+            docker build --tag ghcr.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
+      - push-image-ghcr:
+          image: ghcr.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-menu:${CIRCLE_SHA1:0:7}
 
   deploy-service:
-    executor: heroku/default
+    machine:
+      image: ubuntu-2404:2024.05.1
+      docker_layer_caching: false
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: false
-      - heroku/install
+      - login-ghcr
       - run:
-          name: Log in to Heroku Container Registry
+          name: Preparar e enviar script de deploy
           command: |
-            heroku stack:set container -a $HEROKU_APP_NAME
-            heroku container:login
-      # comando bugado
-      # - heroku/push-docker-image:
-      #    recursive: true
-      #    process-types: "web"
-      - run:
-          name: Push Docker image to Heroku
-          command: >
-            heroku container:push -a $HEROKU_APP_NAME --recursive web
-      - heroku/release-docker-image:
-          process-types: "web"
+            ./deploy/fill_variables.py ./deploy/deploy.sh
+            scp ./deploy/deploy.sh_filled $SSH_USER@$SSH_HOST:/tmp/deploy.sh
+            ssh ${SSH_USER}@${SSH_HOST} "/tmp/deploy.sh &"
 
   farewell:
     docker:
@@ -119,18 +133,22 @@ workflows:
             - Discord
       - test-and-build-backend:
           name: Teste e build do serviço de backend
+          context:
+            - Github
+          #   - Discord
           requires:
             - Notificação de começo do workflow
-          # context:
-          #   - Discord
       - build-frontend:
           name: Build do serviço de frontend
+          context:
+            - Github
           requires:
             - Notificação de começo do workflow
       - deploy-service:
           name: Deploy do serviço
           context:
-            - Heroku
+            - Github
+            - Vultr
           requires:
             - Teste e build do serviço de backend
             - Build do serviço de frontend
