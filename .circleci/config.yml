@@ -92,7 +92,7 @@ workflows:
           name: Notificação de começo da build
           context:
             # contém a variável sensível necessária para enviar notificações em outro serviço
-            - Discord
+            - discord
       - test-and-build-backend:
           name: Teste e build do serviço de backend
           requires:
