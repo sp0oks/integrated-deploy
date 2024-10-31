@@ -1,17 +1,73 @@
-# This config was automatically generated from your source code
-# Stacks detected: deps:node:cocktail-menu,deps:python:cocktail-api
 version: 2.1
 
+# Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
   greetings:
     docker:
       - image: cimg/base:stable
+      # O executor default de docker é o large, com 4 vCPUs e 8GB RAM
+      # Podemos mudar o executor com o comando a seguir e um dos valores possíveis:
+      # lista de resource classes: https://circleci.com/docs/using-docker/#available-docker-resource-classes
+      # resource_class: <class>
+    resource_class: small
     steps:
       - checkout
       - run:
-          command: echo "Bem vindo ao CircleCI!"
+          command: echo "Build do projeto iniciada às $(date +%r)"
 
+  build-backend:
+    docker:
+      - image: cimg/base:stable
+    resource_class: medium
+    steps:
+      - setup_remote_docker:
+          # a build sem caching está durando menos de um minuto, vamos deixar este aqui desativado
+          docker_layer_caching: false
+      - checkout
+      - run:
+          name: Build da imagem da API
+          command: |
+            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+
+  build-frontend:
+    docker:
+      - image: cimg/base:stable
+    resource_class: medium
+    steps:
+      - setup_remote_docker:
+          # infelizmente um dos únicos jeitos de melhorar a performance do npm em CI é ativando caching
+          docker_layer_caching: true
+      - checkout
+      - run:
+          name: Build da imagem do site
+          command: |
+            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
+
+  farewell:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          command: echo "Build do projeto terminada às $(date +%r)"
+
+# Workflows: orquestram a ordem dos jobs
 workflows:
-  hello-world:
+  build:
     jobs:
-      - greetings
+      - greetings:
+          name: Notificação de começo da build
+      - build-backend:
+          name: Build do serviço de backend
+          requires:
+            - Notificação de começo da build
+      - build-frontend:
+          name: Build do serviço de frontend
+          requires:
+            - Notificação de começo da build
+      - farewell:
+          name: Notificação de fim da build
+          requires:
+            - Build do serviço de backend
+            - Build do serviço de frontend
