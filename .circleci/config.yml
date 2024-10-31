@@ -1,5 +1,17 @@
 version: 2.1
 
+# Commands: definem comandos de um ou mais steps que pode ser reutilizado em vários jobs
+commands:
+  instala_dependencias:
+    steps:
+      - run:
+          name: Instala dependencias com uv
+          command: |
+            pip install uv
+            uv venv
+            source .venv/bin/activate
+            uv pip install -r cocktail-api/requirements.txt
+
 # Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
   greetings:
@@ -15,15 +27,26 @@ jobs:
       - run:
           command: echo "Build do projeto iniciada às $(date +%r)"
 
-  build-backend:
+  test-and-build-backend:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/python:3.10
     resource_class: medium
     steps:
       - setup_remote_docker:
           # a build sem caching está durando menos de um minuto, vamos deixar este aqui desativado
           docker_layer_caching: false
       - checkout
+      - instala_dependencias
+      - run:
+          name: Testes unitários da API
+          command: |
+            source .venv/bin/activate
+            cd cocktail-api
+            export PYTHONPATH=.
+            pytest -c pytest.ini --junitxml="/tmp/reports/junit.xml" --cov=src/ --cov-report=term-missing .
+      - store_test_results:
+          # salva os resultados dos testes unitários para análise no circleci
+          path: /tmp/reports
       - run:
           name: Build da imagem da API
           command: |
@@ -58,8 +81,8 @@ workflows:
     jobs:
       - greetings:
           name: Notificação de começo da build
-      - build-backend:
-          name: Build do serviço de backend
+      - test-and-build-backend:
+          name: Teste e build do serviço de backend
           requires:
             - Notificação de começo da build
       - build-frontend:
@@ -69,5 +92,5 @@ workflows:
       - farewell:
           name: Notificação de fim da build
           requires:
-            - Build do serviço de backend
+            - Teste e build do serviço de backend
             - Build do serviço de frontend
