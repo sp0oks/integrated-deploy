@@ -1,0 +1,17 @@
+version: 2.1
+
+# Jobs: definem a ordem de comandos que serão executados passo a passo
+jobs:
+  greetings:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          command: echo "Bem vindo ao CircleCI!"
+
+# Workflows: orquestram a ordem dos jobs
+workflows:
+  hello-world:
+    jobs:
+      - greetings
