@@ -31,7 +31,7 @@ jobs:
           command: echo "Build do projeto iniciada às $(date +%r)"
       - discord/status:
           success_message: "Workflow de #${CIRCLE_SHA1:0:7} iniciado..."
-
+          
   test-and-build-backend:
     docker:
       - image: cimg/python:3.10
@@ -56,9 +56,6 @@ jobs:
           name: Build da imagem da API
           command: |
             docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
-      # - discord/status:
-      #     fail_only: true
-      #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
 
   build-frontend:
     docker:
@@ -84,6 +81,7 @@ jobs:
       - discord/status:
           success_message: ":tada: Workflow de #${CIRCLE_SHA1:0:7} terminado com sucesso!"
 
+
 # Workflows: orquestram a ordem dos jobs
 workflows:
   build:
@@ -97,8 +95,6 @@ workflows:
           name: Teste e build do serviço de backend
           requires:
             - Notificação de começo da build
-          # context:
-          #   - Discord
       - build-frontend:
           name: Build do serviço de frontend
           requires:
