@@ -15,6 +15,27 @@ commands:
             uv venv
             source .venv/bin/activate
             uv pip install -r cocktail-api/requirements.txt
+            
+  login-ghcr:
+    description: "Faz o login no GHCR (github container registry) para executar comandos do docker que precisam de autenticação"
+    steps:
+      - run:
+          name: Loga no Github Container Registry
+          command: |
+            docker login --username ${CIRCLE_PROJECT_USERNAME} --password ${GITHUB_TOKEN} ghcr.io
+
+  push-image-ghcr:
+    description: "Executa um docker push de uma imagem para o GHCR para disponibilizar um package (outro nome para docker image) no repositório"
+    parameters:
+      image:
+        type: string
+    steps:
+      - login-ghcr
+      - run:
+          name: Sobe a imagem para o GHCR
+          command: |
+            docker push << parameters.image >>
+
 
 # Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
@@ -28,10 +49,9 @@ jobs:
     resource_class: small
     steps:
       - run:
-          command: echo "Build do projeto iniciada às $(date +%r)"
+          command: echo "Workflow do projeto iniciado às $(date +%r)"
       - discord/status:
-          success_message: "Workflow de #${CIRCLE_SHA1:0:7} iniciado..."
-          
+          success_message: "Workflow do commit #${CIRCLE_SHA1:0:7} iniciado..."
   test-and-build-backend:
     docker:
       - image: cimg/python:3.10
@@ -55,7 +75,9 @@ jobs:
       - run:
           name: Build da imagem da API
           command: |
-            docker build --tag cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+            docker build --tag ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
+      - push-image-ghcr:
+          image: ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7}
 
   build-frontend:
     docker:
@@ -69,7 +91,26 @@ jobs:
       - run:
           name: Build da imagem do site
           command: |
-            docker build --tag cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
+            docker build --tag ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-menu:${CIRCLE_SHA1:0:7} ./cocktail-menu/
+      - push-image-ghcr:
+          image: ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-menu:${CIRCLE_SHA1:0:7}
+
+  deploy-service:
+    machine:
+      image: ubuntu-2404:2024.05.1
+      docker_layer_caching: false
+      resource_class: medium
+    steps:
+      - checkout
+      - login-ghcr
+      - run:
+          name: Preparar e enviar script de deploy
+          command: |
+            ./deploy/fill_variables.py ./deploy/deploy.sh
+            ./deploy/fill_variables.py ./deploy/compose.yml
+            scp ./deploy/deploy.sh_filled $SSH_USER@$SSH_HOST:/tmp/deploy.sh
+            scp ./deploy/compose.yml_filled $SSH_USER@$SSH_HOST:/tmp/compose.yml
+            ssh ${SSH_USER}@${SSH_HOST} "chmod +x /tmp/deploy.sh && /tmp/deploy.sh /tmp/compose.yml"
 
   farewell:
     docker:
@@ -77,32 +118,43 @@ jobs:
     resource_class: small
     steps:
       - run:
-          command: echo "Build do projeto terminada às $(date +%r)"
+          command: echo "Workflow do projeto terminado às $(date +%r)"
       - discord/status:
-          success_message: ":tada: Workflow de #${CIRCLE_SHA1:0:7} terminado com sucesso!"
-
+          success_message: ":tada: Workflow do commit #${CIRCLE_SHA1:0:7} terminado com sucesso!"
 
 # Workflows: orquestram a ordem dos jobs
 workflows:
-  build:
+  deploy:
     jobs:
       - greetings:
-          name: Notificação de começo da build
+          name: Notificação de começo do workflow
           context:
             # contém a variável sensível necessária para enviar notificações em outro serviço
             - Discord
       - test-and-build-backend:
           name: Teste e build do serviço de backend
+          context:
+            - Github
+          #   - Discord
           requires:
-            - Notificação de começo da build
+            - Notificação de começo do workflow
       - build-frontend:
           name: Build do serviço de frontend
-          requires:
-            - Notificação de começo da build
-      - farewell:
-          name: Notificação de fim da build
           context:
-            - Discord
+            - Github
+          requires:
+            - Notificação de começo do workflow
+      - deploy-service:
+          name: Deploy do serviço
+          context:
+            - Github
+            - Vultr
           requires:
             - Teste e build do serviço de backend
             - Build do serviço de frontend
+      - farewell:
+          name: Notificação de fim do workflow
+          context:
+            - Discord
+          requires:
+            - Deploy do serviço
