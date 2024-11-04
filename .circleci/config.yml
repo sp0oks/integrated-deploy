@@ -15,7 +15,7 @@ commands:
             uv venv
             source .venv/bin/activate
             uv pip install -r cocktail-api/requirements.txt
-
+            
   login-ghcr:
     description: "Faz o login no GHCR (github container registry) para executar comandos do docker que precisam de autenticação"
     steps:
@@ -36,6 +36,7 @@ commands:
           command: |
             docker push << parameters.image >>
 
+
 # Jobs: definem a ordem de comandos que serão executados passo a passo
 jobs:
   greetings:
@@ -51,7 +52,6 @@ jobs:
           command: echo "Workflow do projeto iniciado às $(date +%r)"
       - discord/status:
           success_message: "Workflow do commit #${CIRCLE_SHA1:0:7} iniciado..."
-
   test-and-build-backend:
     docker:
       - image: cimg/python:3.10
@@ -78,9 +78,6 @@ jobs:
             docker build --tag ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7} ./cocktail-api/
       - push-image-ghcr:
           image: ghcr.io/${GITHUB_USERNAME}/${CIRCLE_PROJECT_REPONAME}/cocktail-api:${CIRCLE_SHA1:0:7}
-      # - discord/status:
-      #     fail_only: true
-      #     failure_message: ":red_circle: Algo deu errado no workflow de #${CIRCLE_SHA1:0:7}!"
 
   build-frontend:
     docker:
